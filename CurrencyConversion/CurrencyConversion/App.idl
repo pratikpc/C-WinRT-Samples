@@ -1,0 +1,8 @@
+namespace CurrencyConversion
+{
+    [default_interface]
+    runtimeclass App : Windows.UI.Xaml.Controls.Page
+    {
+        App();
+    }
+}

@@ -1,0 +1,20 @@
+﻿<Page
+    x:Class="CurrencyConversion.MainPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:CurrencyConversion"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d" Height="217.5" Width="456">
+
+    <StackPanel Name="ABCD" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" Height="104" Width="331">
+        <RelativePanel HorizontalAlignment="Center" Height="32" Width="168" Margin="0,0,0,0" VerticalAlignment="Top">
+            <TextBox x:Name="FromAmt" TextChanged="Amt_Changed" InputScope="Number" PlaceholderText="From" HorizontalAlignment="Right" Margin="0,0,0,0" VerticalAlignment="Stretch" d:LayoutOverrides="Height"/>
+            <ComboBox x:Name="FromCurrencyList" HorizontalAlignment="Stretch" VerticalAlignment="Center" SelectionChanged="List_SelectionChanged" ItemsSource="{x:Bind Mode=OneWay, Path=CurrencyNameList}" Margin="70,0,-317,0" Height="32" RenderTransformOrigin="1.015,0.422"/>
+        </RelativePanel>
+        <RelativePanel HorizontalAlignment="Left" Height="32" Width="330" VerticalAlignment="Bottom" Margin="-169,0,0,0">
+            <TextBlock x:Name="ToAmt" Text="To"  HorizontalAlignment="Right" VerticalAlignment="Stretch" d:LayoutOverrides="Height"/>
+            <ComboBox x:Name="ToCurrencyList" HorizontalAlignment="Left" VerticalAlignment="Center" SelectionChanged="List_SelectionChanged" ItemsSource="{x:Bind Mode=OneWay, Path=CurrencyNameList}" Width="241" Margin="76,0,0,0" Height="32" RenderTransformOrigin="0.837,0.562"/>
+        </RelativePanel>
+    </StackPanel>
+</Page>
