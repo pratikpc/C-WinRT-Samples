@@ -41,6 +41,7 @@ namespace TUESL::Net
 	 private:
 #ifdef TUESL_USING_CPP_WINRT
 		HttpClient m_web_client;
+#endif
 
 	 public:
 #ifdef TUESL_USING_CPP_WINRT
