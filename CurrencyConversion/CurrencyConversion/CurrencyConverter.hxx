@@ -38,7 +38,10 @@ namespace Currency
 
 		using namespace std::string_literals;
 
-		using namespace TUESL::SQLite;
+		using TUESL::Net::WebClient;
+
+		using TUESL::SQLite::Database;
+		using TUESL::SQLite::PrepareStatement;
 
 		using std::experimental::generator;
 	} // namespace
@@ -47,6 +50,7 @@ namespace Currency
 	// CurrencyConverter Class only
 	namespace
 	{
+		constexpr const auto DATABASE_NAME = "Database.db";
 		namespace CurrencyJsonAPIURLs
 		{
 			constexpr const auto URL_CURRENCY_IDs =
@@ -84,9 +88,12 @@ namespace Currency
 	struct CurrencyConverter
 	{
 	 private:
-		Database m_db{""};
+		Database  m_db{""};
+		WebClient m_web_client;
 
 	 private:
+		void SetupWebClient();
+
 		void CreateTableCurrencyIDs();
 		void InsertIntoCurrencyIDs(JsonObject p_results);
 

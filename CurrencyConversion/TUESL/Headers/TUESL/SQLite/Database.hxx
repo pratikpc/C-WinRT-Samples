@@ -46,6 +46,10 @@ namespace TUESL::SQLite
 			return sqlite3_threadsafe() != 0;
 		}
 
+		Database& transactionBegin();
+		Database& transactionRollback();
+		Database& transactionEnd();
+
 		bool isReadOnly() const noexcept;
 
 		Database& executeSQL(const std::string_view p_sql);

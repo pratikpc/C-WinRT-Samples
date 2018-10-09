@@ -25,6 +25,8 @@ namespace TUESL::SQLite
 	namespace
 	{
 		using winrt::hstring;
+
+		using winrt::Windows::Foundation::DateTime;
 		using winrt::Windows::Foundation::TimeSpan;
 	} // namespace
 } // namespace TUESL::SQLite
@@ -84,13 +86,17 @@ namespace TUESL::SQLite
 
 		int convertStringIndexToPosition(const std::string_view p_index);
 
-		void incrementCurrentGetIndex(const Index p_cur_index);
+		void incrementCurrentBindIndex(const Index p_bind_cur_index) noexcept;
+		void incrementCurrentGetIndex(const Index p_get_cur_index) noexcept;
 
 	 public:
-		bool checkTableExistence(Database& p_db, const std::string_view p_tbl_name);
+		PrepareStatement() {}
+		PrepareStatement(Database& p_db, const std::string_view p_sql)
+		{
+			prepare(p_db, p_sql);
+		}
 
-		PrepareStatement& beginTransaction(Database& p_db);
-		PrepareStatement& endTransaction(Database& p_db);
+		bool checkTableExistence(Database& p_db, const std::string_view p_tbl_name);
 
 		PrepareStatement& prepare(Database& p_db, const std::string_view p_sql);
 		PrepareStatement& prepare(Database& p_db, const std::wstring_view p_sql);
@@ -140,9 +146,9 @@ namespace TUESL::SQLite
 		std::optional<double>			  getDouble(const Index p_index) noexcept;
 		std::optional<int>				  getInteger(const Index p_index) noexcept;
 		std::optional<DataTypes::Int64> getInt64(const Index p_index) noexcept;
-		std::optional<std::string>		  getString(const Index p_index) noexcept;
-		std::optional<std::wstring>	  getWString(const Index p_index) noexcept;
 
+		std::optional<std::string>  getString(const Index p_index) noexcept;
+		std::optional<std::wstring> getWString(const Index p_index) noexcept;
 #ifdef TUESL_USING_CPP_WINRT
 		std::optional<winrt::hstring> getHString(const Index p_index) noexcept;
 #endif
@@ -151,6 +157,7 @@ namespace TUESL::SQLite
 		auto get(const Index p_index) noexcept
 		{
 			using ColumnCheck = std::remove_cv_t<std::remove_reference_t<ColumnType>>;
+
 			if constexpr (std::is_same_v<ColumnCheck, double>)
 				return getDouble(p_index);
 			else if constexpr (std::is_same_v<ColumnCheck, DataTypes::Int64>)
@@ -200,9 +207,6 @@ namespace TUESL::SQLite
 			return bind(m_bind_cur_index, p_val);
 		}
 
-#ifdef TUESL_USING_CPP_WINRT
-		PrepareStatement& bind(const Index p_index, const winrt::hstring p_value);
-#endif
 		PrepareStatement& bind(const Index p_index, const std::string_view p_value);
 		PrepareStatement& bind(const Index p_index, const std::wstring_view p_value);
 		PrepareStatement& bind(const Index p_index, const double p_value);
@@ -210,6 +214,7 @@ namespace TUESL::SQLite
 		PrepareStatement& bind(const Index p_index, const DataTypes::Int64 p_value);
 #ifdef TUESL_USING_CPP_WINRT
 		PrepareStatement& bind(const Index p_index, const TimeSpan& p_value);
+		PrepareStatement& bind(const Index p_index, const DateTime& p_value);
 #endif
 		PrepareStatement& bind(const Index p_index, const std::nullptr_t);
 
@@ -233,4 +238,3 @@ namespace TUESL::SQLite
 		return bind(convertStringIndexToPosition(p_index), val);
 	}
 } // namespace TUESL::SQLite
-

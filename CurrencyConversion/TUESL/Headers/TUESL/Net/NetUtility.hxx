@@ -1,6 +1,6 @@
 #pragma once
 
-#if __has_include("winrt/Windows.Web.Http.Headers.h")
+#if __has_include("winrt/Windows.Web.Http.h")
 // This definition is defined only when C++WinRT is being used
 #	ifndef TUESL_USING_CPP_WINRT
 #		define TUESL_USING_CPP_WINRT
@@ -36,7 +36,29 @@ namespace TUESL::Net
 #endif
 	} // namespace
 
+	struct WebClient
+	{
+	 private:
 #ifdef TUESL_USING_CPP_WINRT
-	IAsyncOperation<hstring> ReadJsonFromUriAsync(const hstring p_uri);
+		HttpClient m_web_client;
+
+	 public:
+#ifdef TUESL_USING_CPP_WINRT
+		void setUserAgent(const std::wstring_view p_user_agent);
+
+		void addHeader(const std::wstring_view p_key, const std::wstring_view p_value);
+		void removeHeader(const std::wstring_view p_key);
+
+		auto deleteAsync(const Uri& p_uri);
+		auto deleteAsync(const std::wstring_view p_uri);
+
+		auto getStringAsync(const Uri& p_uri);
+		auto getStringAsync(const std::wstring_view p_uri);
+
+		auto getAsync(const Uri& p_uri);
+		auto getAsync(const std::wstring_view p_uri);
+
+		IAsyncOperation<hstring> ReadJsonFromUriAsync(const std::wstring_view p_uri);
 #endif
+	};
 } // namespace TUESL::Net

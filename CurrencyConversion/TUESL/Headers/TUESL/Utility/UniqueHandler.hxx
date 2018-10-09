@@ -12,6 +12,8 @@
 #	ifndef VERIFY_FUNCTION
 #		define VERIFY_FUNCTION(expression, result) assert(expression == result)
 #	endif
+#else
+#	define VERIFY_FUNCTION(expression, result) (expression == result)
 #endif
 
 namespace TUESL::Utility::Handler

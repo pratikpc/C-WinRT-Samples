@@ -4,39 +4,55 @@
 namespace TUESL::Net
 {
 #ifdef TUESL_USING_CPP_WINRT
-	IAsyncOperation<hstring> ReadJsonFromUriAsync(const hstring p_uri)
+	void WebClient::setUserAgent(const std::wstring_view p_user_agent)
 	{
-		HttpClient web_client;
-
-		// Set User Agent to Microsoft Edge
-		web_client.DefaultRequestHeaders().UserAgent().TryParseAdd(
-			L"Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) "
-			L"Chrome/39.0.2171.71 "
-			L"Safari/537.36 Edge/12.0");
-		// Request Json headers
-		web_client.DefaultRequestHeaders().TryAppendWithoutValidation(L"accept",
-			L"application/json");
-
+		m_web_client.DefaultRequestHeaders().UserAgent().TryParseAdd(p_user_agent);
+	}
+	void WebClient::addHeader(const std::wstring_view p_key,
+									  const std::wstring_view p_value)
+	{
+		m_web_client.DefaultRequestHeaders().Append(p_key, p_value);
+	}
+	inline void WebClient::removeHeader(const std::wstring_view p_key)
+	{
+		m_web_client.DefaultRequestHeaders().Remove(p_key);
+	}
+	inline auto WebClient::deleteAsync(const Uri& p_uri)
+	{
+		return m_web_client.DeleteAsync(p_uri);
+	}
+	inline auto WebClient::deleteAsync(const std::wstring_view p_uri)
+	{
+		return deleteAsync(Uri{p_uri});
+	}
+	inline auto WebClient::getStringAsync(const Uri& p_uri)
+	{
+		return m_web_client.GetStringAsync(p_uri);
+	}
+	inline auto WebClient::getStringAsync(const std::wstring_view p_uri)
+	{
+		return getStringAsync(Uri{p_uri});
+	}
+	inline auto WebClient::getAsync(const Uri& p_uri)
+	{
+		return m_web_client.GetAsync(p_uri);
+	}
+	inline auto WebClient::getAsync(const std::wstring_view p_uri)
+	{
+		return getAsync(Uri{p_uri});
+	}
+	IAsyncOperation<hstring> WebClient::ReadJsonFromUriAsync(const std::wstring_view p_uri)
+	{
 		try
 		{
-			const auto http_response_msg = co_await web_client.GetAsync(Uri{ p_uri });
-
-			// If the Status is Not Okay
-			// Assume Query Failed
-			if (http_response_msg.StatusCode() != HttpStatusCode::Ok)
-			{
-				co_return L"";
-			}
-
 			// Read the JSON String and Store it
-			const hstring json = co_await http_response_msg.Content().ReadAsStringAsync();
-
+			const hstring json = co_await getStringAsync(p_uri);
 			co_return json;
 		}
 		catch (...)
 		{
-			co_return L"";
 		}
+		co_return L"";
 	}
 #endif
-}
+} // namespace TUESL::Net

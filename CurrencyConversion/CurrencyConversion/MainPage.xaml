@@ -7,14 +7,19 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d" Height="217.5" Width="456">
 
-    <StackPanel Name="ABCD" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" Height="104" Width="331">
-        <RelativePanel HorizontalAlignment="Center" Height="32" Width="168" Margin="0,0,0,0" VerticalAlignment="Top">
-            <TextBox x:Name="FromAmt" TextChanged="Amt_Changed" InputScope="Number" PlaceholderText="From" HorizontalAlignment="Right" Margin="0,0,0,0" VerticalAlignment="Stretch" d:LayoutOverrides="Height"/>
-            <ComboBox x:Name="FromCurrencyList" HorizontalAlignment="Stretch" VerticalAlignment="Center" SelectionChanged="List_SelectionChanged" ItemsSource="{x:Bind Mode=OneWay, Path=CurrencyNameList}" Margin="70,0,-317,0" Height="32" RenderTransformOrigin="1.015,0.422"/>
+    <Grid x:Name="ABCD" HorizontalAlignment="Center" Height="92" VerticalAlignment="Center" Width="379" Margin="0,0,0,0" >
+        <Grid.RowDefinitions>
+            <RowDefinition Height="44*"/>
+            <RowDefinition Height="49*"/>
+        </Grid.RowDefinitions>
+        <RelativePanel HorizontalAlignment="Left" Height="32" Width="168" Margin="0,0,0,0" VerticalAlignment="Top">
+            <TextBox x:Name="FromAmt" TextChanged="Amt_Changed" InputScope="Number" PlaceholderText="From" HorizontalAlignment="Center" Margin="0,0,0,0" VerticalAlignment="Stretch" Width="84"/>
+            <ComboBox x:Name="FromCurrencyList" HorizontalAlignment="Stretch" VerticalAlignment="Center" SelectionChanged="List_SelectionChanged" ItemsSource="{x:Bind Mode=OneWay, Path=CurrencyNameList}" Margin="95,0,-361,0" Height="32" RenderTransformOrigin="1.015,0.422"/>
         </RelativePanel>
-        <RelativePanel HorizontalAlignment="Left" Height="32" Width="330" VerticalAlignment="Bottom" Margin="-169,0,0,0">
-            <TextBlock x:Name="ToAmt" Text="To"  HorizontalAlignment="Right" VerticalAlignment="Stretch" d:LayoutOverrides="Height"/>
-            <ComboBox x:Name="ToCurrencyList" HorizontalAlignment="Left" VerticalAlignment="Center" SelectionChanged="List_SelectionChanged" ItemsSource="{x:Bind Mode=OneWay, Path=CurrencyNameList}" Width="241" Margin="76,0,0,0" Height="32" RenderTransformOrigin="0.837,0.562"/>
+        <RelativePanel HorizontalAlignment="Right" Height="32" Width="380" VerticalAlignment="Top" Margin="0,16,-1,0" Grid.Row="1">
+            <TextBlock x:Name="ToAmt" Text="To"  HorizontalAlignment="Center" Margin="0,-22,0,-7" Width="82" VerticalAlignment="Stretch"/>
+            <ComboBox x:Name="ToCurrencyList" HorizontalAlignment="Left" VerticalAlignment="Top" SelectionChanged="List_SelectionChanged" ItemsSource="{x:Bind Mode=OneWay, Path=CurrencyNameList}" Margin="97,-22,0,0" Height="32" RenderTransformOrigin="0.837,0.562" Width="263"/>
+            <TextBlock x:Name="MessageInfo" Text="" TextWrapping="Wrap" HorizontalAlignment="Left" Margin="9,10,0,0" VerticalAlignment="Top" Width="329"/>
         </RelativePanel>
-    </StackPanel>
+    </Grid>
 </Page>

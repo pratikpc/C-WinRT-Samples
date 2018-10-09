@@ -3,22 +3,31 @@
 
 namespace TUESL::SQLite
 {
-	inline void PrepareStatement::verify(const int resultCode) const
+	inline void PrepareStatement::verify(const int result_code) const
 	{
-		if (resultCode != SQLITE_OK)
-			throw SQLiteException(resultCode);
+		if (result_code != SQLITE_OK)
+			throw SQLiteException(result_code);
 	}
 	inline int
 		 PrepareStatement::convertStringIndexToPosition(const std::string_view p_index)
 	{
 		return sqlite3_bind_parameter_index(m_stmt.get(), std::data(p_index));
 	}
-	inline void PrepareStatement::incrementCurrentGetIndex(const Index p_cur_index)
+	inline void
+		 PrepareStatement::incrementCurrentBindIndex(const Index p_bind_cur_index) noexcept
 	{
-		if (p_cur_index == m_get_cur_index)
+		if (p_bind_cur_index == m_bind_cur_index)
+			++m_bind_cur_index;
+		else
+			m_bind_cur_index = p_bind_cur_index;
+	}
+	inline void
+		 PrepareStatement::incrementCurrentGetIndex(const Index p_get_cur_index) noexcept
+	{
+		if (p_get_cur_index == m_get_cur_index)
 			++m_get_cur_index;
 		else
-			m_get_cur_index = p_cur_index;
+			m_get_cur_index = p_get_cur_index;
 	}
 	bool PrepareStatement::checkTableExistence(Database&					p_db,
 															 const std::string_view p_tbl_name)
@@ -26,7 +35,7 @@ namespace TUESL::SQLite
 		using namespace std::string_literals;
 
 		// This Query asks the Sqlite_master table about the existence of given table
-		const std::string sql =
+		constexpr const char* sql =
 			 "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name =?";
 
 		prepare(p_db, sql);
@@ -34,28 +43,19 @@ namespace TUESL::SQLite
 
 		return hasNext();
 	}
-	PrepareStatement& PrepareStatement::beginTransaction(Database& p_db)
-	{
-		return execute(p_db, "BEGIN IMMEDIATE TRANSACTION;");
-	}
-	PrepareStatement& PrepareStatement::endTransaction(Database& p_db)
-	{
-		return execute(p_db, "END TRANSACTION;");
-	}
-
 	PrepareStatement& PrepareStatement::prepare(Database&					 p_db,
 															  const std::string_view p_sql)
 	{
 		if (m_stmt.hasValue())
 			reset();
 
-		const auto resultCode = sqlite3_prepare_v2(p_db.getDatabaseRAWHandle(),
-																 std::data(p_sql),
-																 static_cast<int>(std::size(p_sql)),
-																 m_stmt.getAddressOf(),
-																 nullptr);
+		const auto result_code = sqlite3_prepare_v2(p_db.getDatabaseRAWHandle(),
+																  std::data(p_sql),
+																  static_cast<int>(std::size(p_sql)),
+																  m_stmt.getAddressOf(),
+																  nullptr);
 
-		verify(resultCode);
+		verify(result_code);
 
 		// Minimum Value of Index
 		m_bind_cur_index = 1;
@@ -67,21 +67,21 @@ namespace TUESL::SQLite
 	PrepareStatement& PrepareStatement::prepare(Database&					  p_db,
 															  const std::wstring_view p_sql)
 	{
-		// Verify if wchar_t is 16 Bit or Not
+		// Verify if wchar_t is 2 Byte or Not
 		// If it's not, then issue a static_assert
-		static_assert(Utility::size_in_bytes<std::wstring_view::value_type> == 16,
+		static_assert(sizeof(std::wstring_view::value_type) == 2,
 						  "Error Occured. wchar_t must be a 16-bit type to use with SQLite");
 
 		if (m_stmt.hasValue())
 			reset();
 
-		const auto resultCode = sqlite3_prepare16_v2(p_db.getDatabaseRAWHandle(),
-																	std::data(p_sql),
-																	static_cast<int>(std::size(p_sql)),
-																	m_stmt.getAddressOf(),
-																	nullptr);
+		const auto result_code = sqlite3_prepare16_v2(p_db.getDatabaseRAWHandle(),
+																	 std::data(p_sql),
+																	 static_cast<int>(std::size(p_sql)),
+																	 m_stmt.getAddressOf(),
+																	 nullptr);
 
-		verify(resultCode);
+		verify(result_code);
 
 		// Minimum Value of Index
 		m_bind_cur_index = 1;
@@ -137,20 +137,22 @@ namespace TUESL::SQLite
 		if (std::empty(m_stmt))
 			return false;
 
-		const int resultCode = sqlite3_step(m_stmt.get());
+		const int result_code = sqlite3_step(m_stmt.get());
 
-		if (resultCode == SQLITE_ROW)
+		if (result_code == SQLITE_ROW)
 		{
 			m_get_cur_index = 0;
 			return true;
 		}
-		if (resultCode == SQLITE_DONE)
+		if (result_code == SQLITE_DONE)
 		{
 			m_get_cur_index = 0;
 			return false;
 		}
 		else
-			throw SQLiteException(resultCode);
+		{
+			throw SQLiteException(result_code);
+		}
 	}
 	PrepareStatement& PrepareStatement::execute(Database&					 p_db,
 															  const std::string_view p_sql)
@@ -167,12 +169,12 @@ namespace TUESL::SQLite
 		if (std::empty(m_stmt))
 			return *this;
 
-		const int resultCode = sqlite3_step(m_stmt.get());
+		const int result_code = sqlite3_step(m_stmt.get());
 
-		if (resultCode == SQLITE_ROW || resultCode == SQLITE_DONE)
+		if (result_code == SQLITE_ROW || result_code == SQLITE_DONE)
 			return *this; // As these Indicate Success
 		else
-			throw SQLiteException(resultCode);
+			throw SQLiteException(result_code);
 	}
 
 	std::optional<std::string>
@@ -196,6 +198,7 @@ namespace TUESL::SQLite
 	{
 		if (std::empty(m_stmt) || p_index < 0)
 			return std::nullopt;
+		
 		incrementCurrentGetIndex(p_index);
 
 		return sqlite3_column_int(m_stmt.get(), static_cast<int>(p_index));
@@ -205,6 +208,7 @@ namespace TUESL::SQLite
 	{
 		if (std::empty(m_stmt) || p_index < 0)
 			return std::nullopt;
+
 		incrementCurrentGetIndex(p_index);
 
 		return sqlite3_column_int64(m_stmt.get(), static_cast<int>(p_index));
@@ -281,14 +285,14 @@ namespace TUESL::SQLite
 		if (std::empty(m_stmt) || p_index < 1)
 			return *this;
 
-		const auto resultCode = sqlite3_bind_text(m_stmt.get(),
-																static_cast<int>(p_index),
-																std::data(p_value),
-																static_cast<int>(std::size(p_value)),
-																SQLITE_TRANSIENT);
-		verify(resultCode);
+		const auto result_code = sqlite3_bind_text(m_stmt.get(),
+																 static_cast<int>(p_index),
+																 std::data(p_value),
+																 static_cast<int>(std::size(p_value)),
+																 SQLITE_TRANSIENT);
+		verify(result_code);
 
-		++m_bind_cur_index;
+		incrementCurrentBindIndex(p_index);
 
 		return *this;
 	}
@@ -297,7 +301,7 @@ namespace TUESL::SQLite
 	{
 		// Verify if wchar_t is 16 Bit or Not
 		// If it's not, then issue a static_assert
-		static_assert(Utility::size_in_bytes<std::wstring_view::value_type> == 16,
+		static_assert(sizeof(std::wstring_view::value_type) == 2,
 						  "Error Occured. wchar_t must be a 16-bit type to use with SQLite");
 
 		// If It is Empty, what is it that has to be binded
@@ -305,39 +309,17 @@ namespace TUESL::SQLite
 		if (std::empty(m_stmt) || p_index < 1)
 			return *this;
 
-		const auto resultCode = sqlite3_bind_text16(m_stmt.get(),
-																  static_cast<int>(p_index),
-																  std::data(p_value),
-																  static_cast<int>(std::size(p_value)),
-																  SQLITE_TRANSIENT);
-		verify(resultCode);
+		const auto result_code = sqlite3_bind_text16(m_stmt.get(),
+																	static_cast<int>(p_index),
+																	std::data(p_value),
+																	-1,
+																	SQLITE_STATIC);
+		verify(result_code);
 
-		++m_bind_cur_index;
-
-		return *this;
-	}
-#ifdef TUESL_USING_CPP_WINRT
-	PrepareStatement& PrepareStatement::bind(const Index			  p_index,
-														  const winrt::hstring p_value)
-	{
-		// If It is Empty, what is it that has to be binded
-		// Minimum Value of Index is 1
-		if (std::empty(m_stmt) || p_index < 1)
-			return *this;
-
-		const auto resultCode = sqlite3_bind_text16(m_stmt.get(),
-																  static_cast<int>(p_index),
-																  std::data(p_value),
-																  -1,
-																  SQLITE_TRANSIENT);
-
-		verify(resultCode);
-
-		++m_bind_cur_index;
+		incrementCurrentBindIndex(p_index);
 
 		return *this;
 	}
-#endif
 	PrepareStatement& PrepareStatement::bind(const Index p_index, const double p_value)
 	{
 		// If It is Empty, what is it that has to be binded
@@ -345,11 +327,11 @@ namespace TUESL::SQLite
 		if (m_stmt.empty() || p_index < 1)
 			return *this;
 
-		const auto resultCode =
+		const auto result_code =
 			 sqlite3_bind_double(m_stmt.get(), static_cast<int>(p_index), p_value);
-		verify(resultCode);
+		verify(result_code);
 
-		++m_bind_cur_index;
+		incrementCurrentBindIndex(p_index);
 
 		return *this;
 	}
@@ -361,11 +343,11 @@ namespace TUESL::SQLite
 		if (m_stmt.empty() || p_index < 1)
 			return *this;
 
-		const auto resultCode =
+		const auto result_code =
 			 sqlite3_bind_int64(m_stmt.get(), static_cast<int>(p_index), p_value);
-		verify(resultCode);
+		verify(result_code);
 
-		++m_bind_cur_index;
+		incrementCurrentBindIndex(p_index);
 
 		return *this;
 	}
@@ -377,11 +359,11 @@ namespace TUESL::SQLite
 		if (m_stmt.empty() || p_index < 1)
 			return *this;
 
-		const auto resultCode =
+		const auto result_code =
 			 sqlite3_bind_int64(m_stmt.get(), static_cast<int>(p_index), p_value);
-		verify(resultCode);
+		verify(result_code);
 
-		++m_bind_cur_index;
+		incrementCurrentBindIndex(p_index);
 
 		return *this;
 	}
@@ -392,6 +374,10 @@ namespace TUESL::SQLite
 		// Since the Epoch
 		return bind(p_index, p_value.count());
 	}
+	PrepareStatement& PrepareStatement::bind(const Index p_index, const DateTime& p_value)
+	{
+		return bind(p_index, p_value.time_since_epoch());
+	}
 #endif
 	PrepareStatement& PrepareStatement::bind(const Index p_index, const std::nullptr_t)
 	{
@@ -400,10 +386,10 @@ namespace TUESL::SQLite
 		if (m_stmt.empty() || p_index < 1)
 			return *this;
 
-		const auto resultCode = sqlite3_bind_null(m_stmt.get(), static_cast<int>(p_index));
-		verify(resultCode);
+		const auto result_code = sqlite3_bind_null(m_stmt.get(), static_cast<int>(p_index));
+		verify(result_code);
 
-		++m_bind_cur_index;
+		incrementCurrentBindIndex(p_index);
 
 		return *this;
 	}

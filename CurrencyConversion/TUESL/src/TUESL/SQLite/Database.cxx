@@ -23,6 +23,18 @@ namespace TUESL::SQLite
 
 		return *this;
 	}
+	Database& Database::transactionBegin()
+	{
+		return executeSQL("BEGIN IMMEDIATE TRANSACTION;");
+	}
+	Database& Database::transactionRollback()
+	{
+		return executeSQL("ROLLBACK TRANSACTION;");
+	}
+	Database& Database::transactionEnd()
+	{
+		return executeSQL("END TRANSACTION;");
+	}
 	bool Database::isReadOnly() const noexcept
 	{
 		if (std::empty(m_db))

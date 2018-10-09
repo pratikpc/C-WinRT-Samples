@@ -40,7 +40,7 @@ namespace Currency
 		// Ensure that the code is Present between a Begin And End Transaction
 		// Helps Raise Performance
 
-		ps.beginTransaction(m_db);
+		m_db.transactionBegin();
 
 		const std::string sql =
 			 "INSERT OR IGNORE INTO "s + TableNames::TABLE_CURRENCY_VALUES + "(" +
@@ -53,7 +53,7 @@ namespace Currency
 		ps.bind(p_from_code);
 		ps.bind(p_to_code);
 		ps.bind(p_converted_value);
-		ps.bind(current_time.time_since_epoch().count());
+		ps.bind(current_time);
 		ps.execute();
 
 		// Note that if 1 USD = 70 INR
@@ -63,12 +63,12 @@ namespace Currency
 		ps.bind(p_to_code);
 		ps.bind(p_from_code);
 		ps.bind(1 / p_converted_value);
-		ps.bind(current_time.time_since_epoch());
+		ps.bind(current_time);
 		ps.execute();
 
 		// End the Transaction
 		// Ensure changes are committed to database
-		ps.endTransaction(m_db);
+		m_db.transactionEnd();
 	}
 	IAsyncOperation<double>
 		 CurrencyConverter::GetConvertedCurrencyValue(const hstring p_from_code,
@@ -107,7 +107,7 @@ namespace Currency
 			const hstring uri =
 				 CurrencyJsonAPIURLs::URL_CURRENCY_AMTs + code_from_to_concatenated;
 
-			const hstring json = co_await TUESL::Net::ReadJsonFromUriAsync(uri);
+			const hstring json = co_await m_web_client.ReadJsonFromUriAsync(uri);
 
 			if (std::empty(json))
 				co_return 0.0;
@@ -137,21 +137,21 @@ namespace Currency
 		ps.bind(p_time);
 		ps.execute();
 	}
-	void CurrencyConverter::InsertIntoCurrencyIDs(JsonObject p_results)
+	void CurrencyConverter::InsertIntoCurrencyIDs(const JsonObject p_results)
 	{
 
-		PrepareStatement ps{};
 		// Ensure that the code is Present between a Begin And End Transaction
 		// Helps Raise Performance
 
-		ps.beginTransaction(m_db);
+		m_db.transactionBegin();
 
-		const std::string sql = "INSERT OR IGNORE INTO "s + TableNames::TABLE_CURRENCY_IDs +
+ 		const std::string sql = "INSERT OR IGNORE INTO "s + TableNames::TABLE_CURRENCY_IDs +
 										"("s + ColumnNames::CurrencyIDs::COLUMN_ID + ","s +
 										ColumnNames::CurrencyIDs::COLUMN_NAME + ","s +
 										ColumnNames::CurrencyIDs::COLUMN_SYMBOL +
 										") VALUES(?,?,?);"s;
 
+		PrepareStatement ps{};
 		for (const auto it = p_results.First(); it.HasCurrent(); it.MoveNext())
 		{
 			// This is a PrepareStatement
@@ -167,7 +167,7 @@ namespace Currency
 			}
 			else
 			{
-				ps.bind(to_hstring(""));
+				ps.bind(L"");
 			}
 
 			if (obj.HasKey(to_hstring(ColumnNames::CurrencyIDs::COLUMN_NAME)))
@@ -178,7 +178,7 @@ namespace Currency
 			}
 			else
 			{
-				ps.bind(to_hstring(""));
+				ps.bind(L"");
 			}
 
 			if (obj.HasKey(to_hstring(ColumnNames::CurrencyIDs::COLUMN_SYMBOL)))
@@ -189,7 +189,7 @@ namespace Currency
 			}
 			else
 			{
-				ps.bind(to_hstring(""));
+				ps.bind(L"");
 			}
 
 			// Runs an Update
@@ -199,7 +199,7 @@ namespace Currency
 
 		// End the Transaction
 		// Ensure changes are committed to database
-		ps.endTransaction(m_db);
+		m_db.transactionEnd();
 	}
 	int CurrencyConverter::GetCountOfCurrencyIDs()
 	{
@@ -209,7 +209,7 @@ namespace Currency
 		ps.prepare(m_db, sql);
 		if (ps.hasNext())
 		{
-			const auto count = ps.get<int>(0).value_or(0);
+			const auto count = ps.get<int>().value_or(0);
 			// Return Number of Elements
 			// If count returned is negative, return 0
 			return (count < 0) ? 0 : count;
@@ -237,8 +237,8 @@ namespace Currency
 			co_return;
 
 		// Read Json
-		const auto	json =
-			 co_await TUESL::Net::ReadJsonFromUriAsync(CurrencyJsonAPIURLs::URL_CURRENCY_IDs);
+		const hstring json = co_await m_web_client.ReadJsonFromUriAsync(
+			 CurrencyJsonAPIURLs::URL_CURRENCY_IDs);
 
 		if (std::empty(json))
 			co_return;
@@ -251,6 +251,18 @@ namespace Currency
 
 		InsertIntoCurrencyIDs(results);
 	}
+	inline void CurrencyConverter::SetupWebClient()
+	{
+		// Set User Agent to Microsoft Edge
+		m_web_client.setUserAgent(
+			 L"Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like "
+			 L"Gecko) "
+			 L"Chrome/39.0.2171.71 "
+			 L"Safari/537.36 Edge/12.0");
+
+		// Set the Header to only provide Json Values
+		m_web_client.addHeader(L"accept", L"application/json");
+	}
 	generator<hstring> CurrencyConverter::GetAllCurrencyNamesAsync()
 	{
 		const std::string sql = "SELECT "s + ColumnNames::CurrencyIDs::COLUMN_NAME +
@@ -262,7 +274,7 @@ namespace Currency
 
 		while (ps.hasNext())
 		{
-			const auto currency_name = ps.get<hstring>(0).value_or(L"");
+			const auto currency_name = ps.get<hstring>().value_or(L"");
 			// Return All Currency Names found
 			co_yield currency_name;
 		}
@@ -315,8 +327,8 @@ namespace Currency
 
 		if (ps.hasNext())
 		{
-			const auto from_code = ps.get<hstring>(0).value_or(L"");
-			const auto to_code	= ps.get<hstring>(1).value_or(L"");
+			const auto from_code = ps.get<hstring>().value_or(L"");
+			const auto to_code	= ps.get<hstring>().value_or(L"");
 
 			return std::make_pair(from_code, to_code);
 		}
@@ -343,10 +355,22 @@ namespace Currency
 
 	CurrencyConverter::CurrencyConverter()
 	{
-		const hstring local_folder =
-			 Windows::Storage::ApplicationData::Current().LocalFolder().Path();
-		m_db.open(to_string(local_folder) + "\\abcd.db");
+		// Verify if threading is enabled within database
+		// Throw Exception if Not
+		assert(Database::IsThreadingEnabled() && "Threading is Disabled within SQLite");
+
+		// Add Path to Cache Directory
+		const hstring cache_folder_path =
+			 Windows::Storage::ApplicationData::Current().LocalCacheFolder().Path();
+
+		const std::string database_path =
+			 to_string(cache_folder_path) + "\\" + DATABASE_NAME;
+
+		// Open the Database
+		m_db.open(database_path);
 
 		CreateTableCurrencyValues();
+
+		SetupWebClient();
 	}
 } // namespace Currency

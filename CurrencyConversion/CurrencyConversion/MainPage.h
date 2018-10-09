@@ -8,6 +8,7 @@
 
 #include "CurrencyConverter.hxx"
 
+// Required for Timer
 #include <winrt/Windows.System.Threading.h>
 
 #include <winrt/Windows.UI.ViewManagement.h>
@@ -28,9 +29,7 @@ namespace winrt::CurrencyConversion::implementation
 		using namespace Windows::UI::Core;
 		using namespace Windows::UI::ViewManagement;
 
-		using namespace Windows::System::Threading;
-
-		using TUESL::SQLite::Database;
+		using Windows::System::Threading::ThreadPoolTimer;
 	} // namespace
 
 	struct MainPage : MainPageT<MainPage>
@@ -52,6 +51,7 @@ namespace winrt::CurrencyConversion::implementation
 
 		IAsyncAction List_SelectionChanged(const IInspectable&,
 													  const SelectionChangedEventArgs&);
+
 
 		MainPage();
 	};

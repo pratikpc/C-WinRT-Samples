@@ -11,22 +11,43 @@ namespace winrt::CurrencyConversion::implementation
 	void MainPage::AddValuesToCurrencyIDList()
 	{
 		Dispatcher().RunAsync(CoreDispatcherPriority::Normal, [this]() -> IAsyncAction {
+			MessageInfo().Text(L"Obtaining List of Currencies");
 			auto setup = m_currency_converter.SetupTableCurrencyIDs();
 
 			setup.Completed([this](IAsyncAction const&,
-										  const AsyncStatus& status) /*-> IAsyncAction*/ {
+										  const AsyncStatus& status) -> IAsyncAction {
 				if (status == AsyncStatus::Completed)
 				{
+					CurrencyNameList().Clear();
+
 					// This will Update Both Drop Down Lists with Currency Names
 					auto currency_names_list = m_currency_converter.GetAllCurrencyNamesAsync();
 					for (const hstring& currency_name : currency_names_list)
 						if (!std::empty(currency_name))
 							CurrencyNameList().Append(box_value(currency_name));
+
+							// Check if No Currency Name Element was Loaded
+					// If true, Display Error Message and Exit
+					if (CurrencyNameList().Size() == 0)
+					{
+						ContentDialog error_diag{};
+						error_diag.Title(winrt::box_value(L"Currency Converter"));
+						error_diag.Content(
+							 winrt::box_value(L"Error Occured: Unable to Load Data. Please check if Internet is On. Restart Application when started"));
+						error_diag.CloseButtonText(L"OK");
+						co_await error_diag.ShowAsync();
+					}
+					else
+					{
+						MessageInfo().Text(L"");
+					}
+
 				}
 			});
 
 			co_await setup;
 		});
+
 	}
 
 	void MainPage::CleanupDatabaseOfOldCurrencyConversionsInFixTimePeriod()
@@ -46,7 +67,6 @@ namespace winrt::CurrencyConversion::implementation
 
 			// Note that we have set the Offset to 12 Hours
 			// As such any data prior to 12 hours shall be deleted
-
 			constexpr const auto offset = duration_cast<TimeSpan>(std::chrono::hours{12});
 
 			// The difference in current time and delete_prior tells us exactly in which
@@ -56,12 +76,12 @@ namespace winrt::CurrencyConversion::implementation
 			m_currency_converter.DeleteAllCurrencyValuesOlderThanTime(delete_prior);
 		};
 
-		// Let us set it to Reset Every 12 Hours
+		// Let us set it to Reset Every 2 Hours
 		constexpr const auto reset_duration =
-			 duration_cast<TimeSpan>(std::chrono::hours{12});
+			 duration_cast<TimeSpan>(std::chrono::hours{2});
 
 		// Create the ThreadPoolTimer here
-		// This timer will only run every 18 hours
+		// This timer will only run every 2 hours
 		auto periodic_cleanup_old_currency_timer =
 			 ThreadPoolTimer::CreatePeriodicTimer(cleanup_currency, reset_duration);
 
@@ -105,10 +125,10 @@ namespace winrt::CurrencyConversion::implementation
 
 		const auto src_amt_str = winrt::to_string(FromAmt().Text());
 
-		// If the Src String is empty
+		// If the Source Amount String is empty
 		// Do nothing
 		if (std::empty(src_amt_str))
-			return;
+			co_return;
 
 		const double src_amt = std::stod(src_amt_str);
 
@@ -122,6 +142,9 @@ namespace winrt::CurrencyConversion::implementation
 			ToAmt().Text(L"0");
 			co_return;
 		}
+
+		// Display Updating Message
+		MessageInfo().Text(L"Updating Information");
 
 		// Set this as PlaceHolder Value till Update Occurs
 		ToAmt().Text(L"To");
@@ -151,6 +174,11 @@ namespace winrt::CurrencyConversion::implementation
 			{
 				// Set the To Screen to this value
 				ToAmt().Text(winrt::to_hstring(converted_amt));
+				MessageInfo().Text(L"");
+			}
+			else
+			{
+				MessageInfo().Text(L"Error Occurred in obtaining amount");
 			}
 		}
 	}
@@ -191,10 +219,6 @@ namespace winrt::CurrencyConversion::implementation
 											  winrt::single_threaded_vector<IInspectable>()}
 	{
 		InitializeComponent();
-
-		// Verify if threading is enabled within database
-		// Throw Exception if Not
-		assert(Database::IsThreadingEnabled() && "Threading is Disabled within SQLite");
 
 		AddValuesToCurrencyIDList();
 
