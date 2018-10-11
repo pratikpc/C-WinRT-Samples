@@ -1,5 +1,5 @@
 #include "pch.h"
-#include <TUESL/Net/NetUtility.hxx>
+#include <TUESL/Net/WebClient.hxx>
 
 namespace TUESL::Net
 {

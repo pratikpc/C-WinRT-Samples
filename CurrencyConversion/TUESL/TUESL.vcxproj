@@ -200,7 +200,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="Headers\TUESL\Net\NetUtility.hxx" />
+    <ClInclude Include="Headers\TUESL\Net\WebClient.hxx" />
     <ClInclude Include="Headers\TUESL\SQLite\Database.hxx" />
     <ClInclude Include="Headers\TUESL\SQLite\DataTypes.hxx" />
     <ClInclude Include="Headers\TUESL\SQLite\PrepareStatement.hxx" />
@@ -222,7 +222,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="src\TUESL\Net\NetUtility.cxx" />
+    <ClCompile Include="src\TUESL\Net\WebClient.cxx" />
     <ClCompile Include="src\TUESL\SQLite\Database.cxx" />
     <ClCompile Include="src\TUESL\SQLite\PrepareStatement.cxx" />
   </ItemGroup>

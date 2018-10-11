@@ -5,7 +5,7 @@
 #include <TUESL/SQLite/PrepareStatement.hxx>
 
 // Required for Accessing Internet via the web
-#include <TUESL/Net/NetUtility.hxx>
+#include <TUESL/Net/WebClient.hxx>
 
 // Required to Manipulate JSON
 #include <winrt/Windows.Data.Json.h>
