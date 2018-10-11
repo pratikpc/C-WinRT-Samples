@@ -8,46 +8,35 @@ namespace winrt::CurrencyConversion::implementation
 	{
 		return m_currency_list;
 	}
-	void MainPage::AddValuesToCurrencyIDList()
+	fire_and_forget MainPage::AddValuesToCurrencyIDList()
 	{
-		Dispatcher().RunAsync(CoreDispatcherPriority::Normal, [this]() -> IAsyncAction {
-			MessageInfo().Text(L"Obtaining List of Currencies");
-			auto setup = m_currency_converter.SetupTableCurrencyIDs();
+		MessageInfo().Text(L"Obtaining List of Currencies");
+		
+		co_await m_currency_converter.SetupTableCurrencyIDs();
+		
+		CurrencyNameList().Clear();
+		// This will Update Both Drop Down Lists with Currency Names
+		auto currency_names_list = m_currency_converter.GetAllCurrencyNamesAsync();
+		for (const hstring& currency_name : currency_names_list)
+			if (!std::empty(currency_name))
+				CurrencyNameList().Append(box_value(currency_name));
 
-			setup.Completed([this](IAsyncAction const&,
-										  const AsyncStatus& status) -> IAsyncAction {
-				if (status == AsyncStatus::Completed)
-				{
-					CurrencyNameList().Clear();
-
-					// This will Update Both Drop Down Lists with Currency Names
-					auto currency_names_list = m_currency_converter.GetAllCurrencyNamesAsync();
-					for (const hstring& currency_name : currency_names_list)
-						if (!std::empty(currency_name))
-							CurrencyNameList().Append(box_value(currency_name));
-
-							// Check if No Currency Name Element was Loaded
-					// If true, Display Error Message and Exit
-					if (CurrencyNameList().Size() == 0)
-					{
-						ContentDialog error_diag{};
-						error_diag.Title(winrt::box_value(L"Currency Converter"));
-						error_diag.Content(
-							 winrt::box_value(L"Error Occured: Unable to Load Data. Please check if Internet is On. Restart Application when started"));
-						error_diag.CloseButtonText(L"OK");
-						co_await error_diag.ShowAsync();
-					}
-					else
-					{
-						MessageInfo().Text(L"");
-					}
-
-				}
-			});
-
-			co_await setup;
-		});
-
+		// Check if No Currency Name Element was Loaded
+		// If true, Display Error Message and Exit
+		if (CurrencyNameList().Size() == 0)
+		{
+			ContentDialog error_diag{};
+			error_diag.Title(winrt::box_value(L"Currency Converter"));
+			error_diag.Content(winrt::box_value(
+				 L"Error Occured: Unable to Load Data. Please check if Internet is On. "
+				 L"Restart Application when started"));
+			error_diag.CloseButtonText(L"OK");
+			co_await error_diag.ShowAsync();
+		}
+		else
+		{
+			MessageInfo().Text(L"");
+		}
 	}
 
 	void MainPage::CleanupDatabaseOfOldCurrencyConversionsInFixTimePeriod()
@@ -92,9 +81,17 @@ namespace winrt::CurrencyConversion::implementation
 
 	IAsyncAction MainPage::UpdateReadingsAsync()
 	{
+		const auto src_amt_str = winrt::to_string(FromAmt().Text());
+
+		// If the Source Amount String is empty
+		// Do nothing
+		if (std::empty(src_amt_str))
+			co_return;
+
 		// Get the From and To Codes
 		const auto from_selected_idx = FromCurrencyList().SelectedIndex();
 		const auto to_selected_idx	= ToCurrencyList().SelectedIndex();
+
 		// If From Selected Index is Unknown
 		// Or To Selected Index is Unknown
 		// Do Nothing
@@ -107,28 +104,20 @@ namespace winrt::CurrencyConversion::implementation
 			// As both the currencies are the same
 			// Their valuations will be same as well
 			ToAmt().Text(FromAmt().Text());
+			MessageInfo().Text(L"");
 			co_return;
 		}
 
 		const auto from_selected_cur_name =
 			 unbox_value<winrt::hstring>(CurrencyNameList().GetAt(from_selected_idx));
-		const auto from_code =
-			 m_currency_converter.GetCurrencyIDFromName(from_selected_cur_name);
-
-		// Get the From and To Codes
-		// If From Selected Index is Unknown
-		// Do Nothing
 		const auto to_selected_cur_name =
 			 unbox_value<winrt::hstring>(CurrencyNameList().GetAt(to_selected_idx));
+
+		// Get the From and To Codes
+		const auto from_code =
+			 m_currency_converter.GetCurrencyIDFromName(from_selected_cur_name);
 		const auto to_code =
 			 m_currency_converter.GetCurrencyIDFromName(to_selected_cur_name);
-
-		const auto src_amt_str = winrt::to_string(FromAmt().Text());
-
-		// If the Source Amount String is empty
-		// Do nothing
-		if (std::empty(src_amt_str))
-			co_return;
 
 		const double src_amt = std::stod(src_amt_str);
 
@@ -140,6 +129,7 @@ namespace winrt::CurrencyConversion::implementation
 			// Hence
 			// Set ToAmt to Zero
 			ToAmt().Text(L"0");
+			MessageInfo().Text(L"");
 			co_return;
 		}
 
@@ -183,7 +173,7 @@ namespace winrt::CurrencyConversion::implementation
 		}
 	}
 
-	IAsyncAction MainPage::Amt_Changed(const IInspectable&, const TextChangedEventArgs&)
+	fire_and_forget MainPage::Amt_Changed(const IInspectable&, const TextChangedEventArgs&)
 	{
 		// Regex to Match Numbers
 		const std::regex regex{R"(^-?\d+\.?\d*$)"};
@@ -204,12 +194,14 @@ namespace winrt::CurrencyConversion::implementation
 			// Initial Conditions
 			FromAmt().Text(L"");
 			ToAmt().Text(L"To");
+
+			co_return;
 		}
 		co_await UpdateReadingsAsync();
 	}
 
-	IAsyncAction MainPage::List_SelectionChanged(const IInspectable&,
-																const SelectionChangedEventArgs&)
+	fire_and_forget MainPage::List_SelectionChanged(const IInspectable&,
+																	const SelectionChangedEventArgs&)
 	{
 		co_await UpdateReadingsAsync();
 	}

@@ -93,6 +93,7 @@ namespace Currency
 
 	 private:
 		void SetupWebClient();
+		void SetupDatabase();
 
 		void CreateTableCurrencyIDs();
 		void InsertIntoCurrencyIDs(JsonObject p_results);

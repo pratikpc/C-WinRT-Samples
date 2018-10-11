@@ -145,7 +145,7 @@ namespace Currency
 
 		m_db.transactionBegin();
 
- 		const std::string sql = "INSERT OR IGNORE INTO "s + TableNames::TABLE_CURRENCY_IDs +
+		const std::string sql = "INSERT OR IGNORE INTO "s + TableNames::TABLE_CURRENCY_IDs +
 										"("s + ColumnNames::CurrencyIDs::COLUMN_ID + ","s +
 										ColumnNames::CurrencyIDs::COLUMN_NAME + ","s +
 										ColumnNames::CurrencyIDs::COLUMN_SYMBOL +
@@ -161,35 +161,35 @@ namespace Currency
 			const auto obj = it.Current().Value().GetObject();
 			if (obj.HasKey(to_hstring(ColumnNames::CurrencyIDs::COLUMN_ID)))
 			{
-				const hstring id =
+				const auto id =
 					 obj.GetNamedString(to_hstring(ColumnNames::CurrencyIDs::COLUMN_ID));
 				ps.bind(id);
 			}
 			else
 			{
-				ps.bind(L"");
+				ps.bind("");
 			}
 
 			if (obj.HasKey(to_hstring(ColumnNames::CurrencyIDs::COLUMN_NAME)))
 			{
-				const hstring name =
+				const auto name =
 					 obj.GetNamedString(to_hstring(ColumnNames::CurrencyIDs::COLUMN_NAME));
 				ps.bind(name);
 			}
 			else
 			{
-				ps.bind(L"");
+				ps.bind("");
 			}
 
 			if (obj.HasKey(to_hstring(ColumnNames::CurrencyIDs::COLUMN_SYMBOL)))
 			{
-				const hstring symbol =
+				const auto symbol =
 					 obj.GetNamedString(to_hstring(ColumnNames::CurrencyIDs::COLUMN_SYMBOL));
 				ps.bind(symbol);
 			}
 			else
 			{
-				ps.bind(L"");
+				ps.bind("");
 			}
 
 			// Runs an Update
@@ -262,6 +262,18 @@ namespace Currency
 
 		// Set the Header to only provide Json Values
 		m_web_client.addHeader(L"accept", L"application/json");
+	}
+	void CurrencyConverter::SetupDatabase()
+	{
+		// Add Path to Cache Directory
+		const hstring cache_folder_path =
+			 Windows::Storage::ApplicationData::Current().LocalCacheFolder().Path();
+
+		const std::string database_path =
+			 to_string(cache_folder_path) + "\\" + DATABASE_NAME;
+
+		// Open the Database
+		m_db.open(database_path);
 	}
 	generator<hstring> CurrencyConverter::GetAllCurrencyNamesAsync()
 	{
@@ -359,18 +371,9 @@ namespace Currency
 		// Throw Exception if Not
 		assert(Database::IsThreadingEnabled() && "Threading is Disabled within SQLite");
 
-		// Add Path to Cache Directory
-		const hstring cache_folder_path =
-			 Windows::Storage::ApplicationData::Current().LocalCacheFolder().Path();
-
-		const std::string database_path =
-			 to_string(cache_folder_path) + "\\" + DATABASE_NAME;
-
-		// Open the Database
-		m_db.open(database_path);
+		SetupWebClient();
+		SetupDatabase();
 
 		CreateTableCurrencyValues();
-
-		SetupWebClient();
 	}
 } // namespace Currency

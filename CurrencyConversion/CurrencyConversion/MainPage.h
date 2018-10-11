@@ -41,15 +41,15 @@ namespace winrt::CurrencyConversion::implementation
 	 public:
 		IVector<IInspectable> CurrencyNameList() const;
 
-		void AddValuesToCurrencyIDList();
+		fire_and_forget AddValuesToCurrencyIDList();
 
 		void CleanupDatabaseOfOldCurrencyConversionsInFixTimePeriod();
 
 		IAsyncAction UpdateReadingsAsync();
 
-		IAsyncAction Amt_Changed(const IInspectable&, const TextChangedEventArgs&);
+		fire_and_forget Amt_Changed(const IInspectable&, const TextChangedEventArgs&);
 
-		IAsyncAction List_SelectionChanged(const IInspectable&,
+		fire_and_forget List_SelectionChanged(const IInspectable&,
 													  const SelectionChangedEventArgs&);
 
 
