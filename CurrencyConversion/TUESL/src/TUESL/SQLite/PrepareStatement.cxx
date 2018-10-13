@@ -9,7 +9,7 @@ namespace TUESL::SQLite
 			throw SQLiteException(result_code);
 	}
 	inline int
-		 PrepareStatement::convertStringIndexToPosition(const std::string_view p_index)
+		 PrepareStatement::convertStringIndexToPosition(const std::string_view p_index) noexcept
 	{
 		return sqlite3_bind_parameter_index(m_stmt.get(), std::data(p_index));
 	}
@@ -101,12 +101,12 @@ namespace TUESL::SQLite
 		if (std::empty(m_stmt))
 			return;
 
-		const auto resetCode = sqlite3_reset(m_stmt.get());
-		verify(resetCode);
+		const auto reset_code = sqlite3_reset(m_stmt.get());
+		verify(reset_code);
 
 		// sqlite3_reset does not clear Bindings!
-		const auto clearBindingCode = sqlite3_clear_bindings(m_stmt.get());
-		verify(clearBindingCode);
+		const auto clear_binding_code = sqlite3_clear_bindings(m_stmt.get());
+		verify(clear_binding_code);
 
 		// Release Statements so its Nulled and can be reused
 		m_stmt.release();

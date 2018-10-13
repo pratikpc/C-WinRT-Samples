@@ -26,4 +26,7 @@
     <ClInclude Include="Headers\TUESL\Utility\Utility.hxx" />
     <ClInclude Include="Headers\TUESL\Net\WebClient.hxx" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
 </Project>

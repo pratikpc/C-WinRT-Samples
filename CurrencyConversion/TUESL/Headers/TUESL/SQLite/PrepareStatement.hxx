@@ -84,7 +84,7 @@ namespace TUESL::SQLite
 	 private:
 		void verify(const int resultCode) const;
 
-		int convertStringIndexToPosition(const std::string_view p_index);
+		int convertStringIndexToPosition(const std::string_view p_index) noexcept;
 
 		void incrementCurrentBindIndex(const Index p_bind_cur_index) noexcept;
 		void incrementCurrentGetIndex(const Index p_get_cur_index) noexcept;
@@ -165,10 +165,12 @@ namespace TUESL::SQLite
 			else if constexpr (std::is_integral_v<ColumnCheck>)
 				return getInteger(p_index);
 			else if constexpr (std::is_same_v<ColumnCheck, std::string> ||
-									 std::is_same_v<ColumnCheck, char*>)
+									 std::is_same_v<ColumnCheck, char*> ||
+									 std::is_same_v<ColumnCheck, std::string_view>)
 				return getString(p_index);
 			else if constexpr (std::is_same_v<ColumnCheck, std::wstring> ||
-									 std::is_same_v<ColumnCheck, wchar_t*>)
+									 std::is_same_v<ColumnCheck, wchar_t*> ||
+									 std::is_same_v<ColumnCheck, std::wstring_view>)
 				return getWString(p_index);
 #ifdef TUESL_USING_CPP_WINRT
 			else if constexpr (std::is_same_v<ColumnCheck, winrt::hstring>)

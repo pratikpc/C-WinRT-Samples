@@ -34,6 +34,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="CurrencyConversion_TemporaryKey.pfx" />
+    <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Assets">
